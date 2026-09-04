@@ -35,13 +35,14 @@ async function startServer() {
       console.log(`  Environment : ${env.NODE_ENV}`);
       console.log(`  Port        : ${env.PORT}`);
       console.log(`  Health      : http://localhost:${env.PORT}/api/health`);
-      console.log(`  Database    : In-Memory (no PostgreSQL required)`);
+      console.log(`  Database    : In-Memory (JSON-persisted)`);
+      console.log(`  SMTP        : ${env.SMTP_USER ? `✅ ${env.SMTP_USER}` : '❌ Not configured'}`);
       console.log('══════════════════════════════════════════════');
       console.log('');
-      console.log('  Demo Logins:');
+      console.log('  Logins:');
       console.log('  ─────────────────────────────────────');
-      console.log('  Admin           → admin@stream.edu / Admin@123');
-      console.log('  STREAM Expert   → expert@stream.edu / Demo@123');
+      console.log(`  Admin           → ${env.ADMIN_EMAIL || 'support@stream.net.in'} / [env password]`);
+      console.log('  STREAM Expert   → [email from Excel] / Expert@123 (must change)');
       console.log('  STREAM Hub      → lab@stream.edu / Demo@123');
       console.log('  iLab Corner     → ilab@stream.edu / Demo@123');
       console.log('  Creative Corner → [UDISE+CC code] / Stream@CC2026');

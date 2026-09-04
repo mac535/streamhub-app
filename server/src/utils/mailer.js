@@ -1,23 +1,27 @@
 const nodemailer = require('nodemailer');
+const { env } = require('../config/env');
 
 let transporter = null;
 
 const createTransporter = () => {
-  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  if (env.SMTP_USER && env.SMTP_PASS) {
+    const port = env.SMTP_PORT || 465;
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: process.env.SMTP_PORT === '465',
+      host: env.SMTP_HOST || 'mail.stream.net.in',
+      port,
+      secure: port === 465, // true for 465 (SSL), false for 587 (STARTTLS)
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
       },
-      debug: true, // Show SMTP traffic in logs
-      logger: true // Log information to console
+      tls: {
+        rejectUnauthorized: env.NODE_ENV === 'production',
+      },
     });
   }
   return null;
 };
+
 
 exports.sendInvite = async (email, name, inviteLink) => {
   const mailTransporter = createTransporter();
@@ -50,7 +54,7 @@ exports.sendInvite = async (email, name, inviteLink) => {
   `;
 
   try {
-    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@stream.edu';
+    const fromEmail = env.SMTP_FROM_EMAIL || env.SMTP_USER || 'noreply@stream.edu';
     await mailTransporter.sendMail({
       from: `"STREAM Administration" <${fromEmail}>`,
       to: email,
@@ -99,7 +103,7 @@ exports.sendPasswordReset = async (email, name, resetLink) => {
   `;
 
   try {
-    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@stream.edu';
+    const fromEmail = env.SMTP_FROM_EMAIL || env.SMTP_USER || 'noreply@stream.edu';
     await mailTransporter.sendMail({
       from: `"STREAM Administration" <${fromEmail}>`,
       to: email,
@@ -147,7 +151,7 @@ exports.sendFormAssignmentEmail = async (email, name, formName, formLink) => {
   `;
 
   try {
-    const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'noreply@stream.edu';
+    const fromEmail = env.SMTP_FROM_EMAIL || env.SMTP_USER || 'noreply@stream.edu';
     await mailTransporter.sendMail({
       from: `"STREAM Administration" <${fromEmail}>`,
       to: email,

@@ -9,8 +9,8 @@ import Button from '../components/ui/Button';
 import api from '../lib/api';
 
 const PORTALS = [
-  { role: 'ADMIN', label: 'Admin', icon: 'admin_panel_settings', defaultEmail: 'admin@stream.edu', defaultPassword: 'Admin@123' },
-  { role: 'EXPERT', label: 'STREAM Expert', icon: 'school', defaultEmail: 'rio7roy@gmail.com', defaultPassword: '123rio' },
+  { role: 'ADMIN', label: 'Admin', icon: 'admin_panel_settings', defaultEmail: 'support@stream.net.in', defaultPassword: 'MSAK9KdE>*RR9bJ<' },
+  { role: 'EXPERT', label: 'STREAM Expert', icon: 'school', defaultEmail: 'harshanjalis@gmail.com', defaultPassword: 'Expert@123' },
   { role: 'STREAM_LAB', label: 'STREAM Hub', icon: 'biotech', defaultEmail: '', defaultPassword: '', isHub: true },
   { role: 'ILAB', label: 'iLab Corner', icon: 'computer', defaultEmail: 'ilab@stream.edu', defaultPassword: 'Demo@123' },
   { role: 'CREATIVE_CORNER', label: 'Creative Corner', icon: 'auto_awesome', defaultEmail: '', defaultPassword: '', isCreativeCorner: true },

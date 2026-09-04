@@ -5,7 +5,7 @@ import api from '../lib/api';
 
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -41,6 +41,9 @@ export default function ChangePasswordPage() {
     setIsLoading(true);
     try {
       await api.put('/auth/change-password', { currentPassword, newPassword });
+      if (updateUser) {
+        updateUser({ mustChangePassword: false });
+      }
       // Navigate to dashboard after successful password change
       const destination = user?.role === 'EXPERT' ? '/expert' 
         : user?.role === 'ADMIN' ? '/admin' 

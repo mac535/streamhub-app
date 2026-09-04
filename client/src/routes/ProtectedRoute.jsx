@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/AuthContext';
 
 /**
@@ -8,6 +8,7 @@ import { useAuth } from '../features/auth/AuthContext';
  */
 export default function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const location = useLocation();
 
   // Show loading state while checking auth
   if (isLoading) {
@@ -30,6 +31,11 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
+  }
+
+  // Force password reset redirect
+  if (user?.mustChangePassword && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
   }
 
   // Check role-based access

@@ -1,4 +1,5 @@
 const { db } = require('../../config/database');
+const { env } = require('../../config/env');
 const { hashPassword, comparePassword } = require('../../utils/password');
 const { generateToken } = require('../../utils/token');
 
@@ -85,9 +86,11 @@ async function getProfile(userId) {
       role: true,
       avatar: true,
       phone: true,
+      dob: true,
       address: true,
       assignedBrcs: true,
       isActive: true,
+      mustChangePassword: true,
       lastLoginAt: true,
       createdAt: true,
     },
@@ -183,7 +186,7 @@ async function forgotPassword(email, origin) {
   }
   
   // If no SMTP user is configured, we assume it's disabled
-  if (!process.env.SMTP_USER) {
+  if (!env.SMTP_USER) {
     emailSent = false;
   }
   

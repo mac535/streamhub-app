@@ -240,7 +240,7 @@ exports.completeOnboarding = async (req, res) => {
   const activeData = readData(activePath);
   
   const { token: _t, ...userBase } = pendingUser;
-  const { password, ...bodyRest } = req.body;
+  const { password, dob, phone, address, username: submittedUsername, ...bodyRest } = req.body;
   
   // Hash password for persistent storage
   let hashedPassword = null;
@@ -248,11 +248,20 @@ exports.completeOnboarding = async (req, res) => {
     hashedPassword = await bcrypt.hash(password, 12);
   }
 
+  // Generate username from email if not provided
+  const email = userBase.email || '';
+  const autoUsername = submittedUsername || email.split('@')[0].replace(/[^a-zA-Z0-9._-]/g, '') || crypto.randomBytes(8).toString('hex');
+
   const newUser = { 
     ...userBase, 
     ...bodyRest, 
-    password: hashedPassword, // Store hashed password
+    username: autoUsername,
+    password: hashedPassword,
+    dob: dob || null,
+    phone: phone || null,
+    address: address || null,
     role: role,
+    mustChangePassword: false, // Expert set their own password during registration
     isActive: true,
     activatedAt: new Date().toISOString() 
   };

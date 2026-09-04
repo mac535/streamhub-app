@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>STREAM API Test Suite</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+    h1 { font-size: 24px; margin-bottom: 8px; color: #38bdf8; }
+    .subtitle { color: #94a3b8; margin-bottom: 24px; font-size: 14px; }
+    .test-group { margin-bottom: 24px; border: 1px solid #1e293b; border-radius: 12px; overflow: hidden; }
+    .test-group-header { background: #1e293b; padding: 12px 16px; font-weight: 600; font-size: 15px; color: #f1f5f9; }
+    .test { padding: 12px 16px; border-top: 1px solid #1e293b; display: flex; gap: 12px; align-items: flex-start; }
+    .test .icon { font-size: 18px; min-width: 24px; text-align: center; margin-top: 2px; }
+    .test .content { flex: 1; }
+    .test .label { font-weight: 500; font-size: 14px; }
+    .test .detail { font-size: 12px; color: #94a3b8; margin-top: 4px; font-family: 'Consolas', monospace; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+    .test.pass { background: #0f291e; }
+    .test.fail { background: #2a1215; }
+    .test.pending { background: #1e293b; opacity: 0.6; }
+    .status { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
+    .status.pass { background: #166534; color: #4ade80; }
+    .status.fail { background: #7f1d1d; color: #f87171; }
+    .status.pending { background: #374151; color: #9ca3af; }
+    .summary { margin-top: 24px; padding: 16px; background: #1e293b; border-radius: 12px; font-size: 14px; }
+    .summary .count { font-size: 28px; font-weight: 700; }
+    .summary .pass-count { color: #4ade80; }
+    .summary .fail-count { color: #f87171; }
+    #run-btn { background: #2563eb; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-bottom: 20px; font-weight: 600; }
+    #run-btn:hover { background: #1d4ed8; }
+    #run-btn:disabled { background: #374151; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>🧪 STREAM Ecosystem — API Test Suite</h1>
+  <p class="subtitle">Testing Admin Credentials, Expert Seeding, Force Password Reset & Invite Workflow</p>
+  <button id="run-btn" onclick="runAllTests()">▶ Run All Tests</button>
+  <div id="results"></div>
+  <div id="summary" class="summary" style="display:none;"></div>
+
+<script>
+const API = 'http://localhost:5000/api';
+let results = [];
+let adminToken = '';
+let expertToken = '';
+let expertId = '';
+
+async function api(method, path, body, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + path, opts);
+  const data = await res.json();
+  return { status: res.status, data };
+}
+
+function addResult(group, label, passed, detail) {
+  results.push({ group, label, passed, detail });
+}
+
+function render() {
+  const groups = {};
+  results.forEach(r => {
+    if (!groups[r.group]) groups[r.group] = [];
+    groups[r.group].push(r);
+  });
+  let html = '';
+  for (const [group, tests] of Object.entries(groups)) {
+    html += `<div class="test-group"><div class="test-group-header">${group}</div>`;
+    tests.forEach(t => {
+      const cls = t.passed === null ? 'pending' : (t.passed ? 'pass' : 'fail');
+      const icon = t.passed === null ? '⏳' : (t.passed ? '✅' : '❌');
+      const statusText = t.passed === null ? 'PENDING' : (t.passed ? 'PASS' : 'FAIL');
+      html += `<div class="test ${cls}">
+        <div class="icon">${icon}</div>
+        <div class="content">
+          <div class="label">${t.label} <span class="status ${cls}">${statusText}</span></div>
+          ${t.detail ? `<div class="detail">${t.detail}</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  document.getElementById('results').innerHTML = html;
+
+  const passed = results.filter(r => r.passed === true).length;
+  const failed = results.filter(r => r.passed === false).length;
+  const total = results.length;
+  const sumEl = document.getElementById('summary');
+  sumEl.style.display = 'block';
+  sumEl.innerHTML = `
+    <span class="count pass-count">${passed}</span> passed &nbsp;/&nbsp;
+    <span class="count fail-count">${failed}</span> failed &nbsp;/&nbsp;
+    <span class="count">${total}</span> total
+  `;
+}
+
+async function runAllTests() {
+  document.getElementById('run-btn').disabled = true;
+  results = [];
+
+  // ═══════════════════════════════════════
+  // TEST 1: Health Check
+  // ═══════════════════════════════════════
+  try {
+    const r = await api('GET', '/health');
+    addResult('🏥 Server Health', 'GET /api/health returns 200', r.status === 200 && r.data.success === true,
+      JSON.stringify(r.data, null, 2));
+  } catch (e) {
+    addResult('🏥 Server Health', 'GET /api/health returns 200', false, e.message);
+  }
+  render();
+
+  // ═══════════════════════════════════════
+  // TEST 2: Admin Login with NEW credentials
+  // ═══════════════════════════════════════
+  try {
+    const r = await api('POST', '/auth/login', { identifier: 'support@stream.net.in', password: 'MSAK9KdE>*RR9bJ<' });
+    const passed = r.status === 200 && r.data.data?.user?.email === 'support@stream.net.in' && r.data.data?.user?.role === 'ADMIN';
+    adminToken = r.data.data?.token || '';
+    addResult('🔐 Admin Authentication', 'Login with support@stream.net.in succeeds', passed,
+      JSON.stringify({ status: r.status, email: r.data.data?.user?.email, role: r.data.data?.user?.role, mustChangePassword: r.data.data?.mustChangePassword }, null, 2));
+  } catch (e) {
+    addResult('🔐 Admin Authentication', 'Login with support@stream.net.in succeeds', false, e.message);
+  }
+  render();
+
+  // TEST 2b: Old admin email should NOT work
+  try {
+    const r = await api('POST', '/auth/login', { identifier: 'admin@stream.edu', password: 'Admin@123' });
+    addResult('🔐 Admin Authentication', 'Old admin@stream.edu login is rejected', r.status === 401,
+      `Status: ${r.status}, Message: ${r.data.message}`);
+  } catch (e) {
+    addResult('🔐 Admin Authentication', 'Old admin@stream.edu login is rejected', false, e.message);
+  }
+  render();
+
+  // TEST 2c: Admin mustChangePassword should be false
+  try {
+    const r = await api('POST', '/auth/login', { identifier: 'support@stream.net.in', password: 'MSAK9KdE>*RR9bJ<' });
+    addResult('🔐 Admin Authentication', 'Admin mustChangePassword = false', r.data.data?.mustChangePassword === false,
+      `mustChangePassword: ${r.data.data?.mustChangePassword}`);
+  } catch (e) {
+    addResult('🔐 Admin Authentication', 'Admin mustChangePassword = false', false, e.message);
+  }
+  render();
+
+  // ═══════════════════════════════════════
+  // TEST 3: Expert Login (seeded from Excel)
+  // ═══════════════════════════════════════
+  const testExperts = [
+    { email: 'ashalekshmi19@gmail.com', name: 'Ashalekshmi T', district: 'Alappuzha' },
+    { email: 'aparna98krishnan@gmail.com', name: 'Aparna Krishnan P', district: 'Ernakulam' },
+    { email: 'akhilk987.ak@gmail.com', name: 'Akhil K', district: 'Kannur' },
+    { email: 'sarath.p.krishna95@gmail.com', name: 'Sarath P', district: 'Malappuram' },
+    { email: 'mpanjualur@gmail.com', name: 'Anju M P', district: 'Palakkad' },
+    { email: 'sangamithra1ofcl@gmail.com', name: 'Sangamithra R', district: 'Thrissur' },
+  ];
+
+  for (const exp of testExperts) {
+    try {
+      const r = await api('POST', '/auth/login', { identifier: exp.email, password: 'Expert@123' });
+      const user = r.data.data?.user;
+      const passed = r.status === 200 && user?.name === exp.name && user?.role === 'EXPERT' && r.data.data?.mustChangePassword === true;
+      if (exp.email === 'ashalekshmi19@gmail.com') {
+        expertToken = r.data.data?.token || '';
+        expertId = user?.id || '';
+      }
+      addResult('👤 Expert Login (Excel Seeded)', `${exp.name} (${exp.district}) — ${exp.email}`, passed,
+        JSON.stringify({ status: r.status, name: user?.name, email: user?.email, dob: user?.dob, phone: user?.phone, brcs: user?.assignedBrcs?.length, mustChangePassword: r.data.data?.mustChangePassword }, null, 2));
+    } catch (e) {
+      addResult('👤 Expert Login (Excel Seeded)', `${exp.name} (${exp.district}) — ${exp.email}`, false, e.message);
+    }
+    render();
+  }
+
+  // ═══════════════════════════════════════
+  // TEST 4: Expert profile data check
+  // ═══════════════════════════════════════
+  try {
+    const r = await api('GET', '/auth/me', null, expertToken);
+    const user = r.data.data;
+    const hasAllFields = user?.dob && user?.phone && user?.address && user?.assignedBrcs?.length > 0;
+    addResult('📋 Expert Profile Data', 'GET /me returns full profile (DOB, phone, address, BRCs)', r.status === 200 && hasAllFields,
+      JSON.stringify({ dob: user?.dob, phone: user?.phone, address: user?.address?.substring(0, 50) + '...', brcCount: user?.assignedBrcs?.length, brcs: user?.assignedBrcs }, null, 2));
+  } catch (e) {
+    addResult('📋 Expert Profile Data', 'GET /me returns full profile', false, e.message);
+  }
+  render();
+
+  // ═══════════════════════════════════════
+  // TEST 5: Force Password Reset Middleware
+  // ═══════════════════════════════════════
+  // 5a: PUT /profile should be BLOCKED (403)
+  try {
+    const r = await api('PUT', '/auth/profile', { name: 'Hacked Name' }, expertToken);
+    addResult('🔒 Force Password Reset', 'PUT /auth/profile BLOCKED for expert with mustChangePassword=true', r.status === 403,
+      `Status: ${r.status}, Message: ${r.data.message}\nErrors: ${JSON.stringify(r.data.errors)}`);
+  } catch (e) {
+    addResult('🔒 Force Password Reset', 'PUT /auth/profile BLOCKED', false, e.message);
+  }
+  render();
+
+  // 5b: GET /me should be ALLOWED (exempt)
+  try {
+    const r = await api('GET', '/auth/me', null, expertToken);
+    addResult('🔒 Force Password Reset', 'GET /auth/me ALLOWED (exempt path)', r.status === 200,
+      `Status: ${r.status}, mustChangePassword: ${r.data.data?.mustChangePassword}`);
+  } catch (e) {
+    addResult('🔒 Force Password Reset', 'GET /auth/me ALLOWED', false, e.message);
+  }
+  render();
+
+  // 5c: Admin should NOT be blocked (mustChangePassword is false/undefined)
+  try {
+    const r = await api('GET', '/auth/me', null, adminToken);
+    addResult('🔒 Force Password Reset', 'Admin NOT blocked by force-reset middleware', r.status === 200,
+      `Status: ${r.status}, role: ${r.data.data?.role}, mustChangePassword: ${r.data.data?.mustChangePassword}`);
+  } catch (e) {
+    addResult('🔒 Force Password Reset', 'Admin NOT blocked', false, e.message);
+  }
+  render();
+
+  // ═══════════════════════════════════════
+  // TEST 6: Password Change Flow
+  // ═══════════════════════════════════════
+  try {
+    const r = await api('PUT', '/auth/change-password', { currentPassword: 'Expert@123', newPassword: 'NewSecure@1' }, expertToken);
+    addResult('🔑 Password Change', 'PUT /auth/change-password succeeds for expert', r.status === 200,
+      `Status: ${r.status}, Message: ${r.data.message}`);
+  } catch (e) {
+    addResult('🔑 Password Change', 'PUT /auth/change-password succeeds', false, e.message);
+  }
+  render();
+
+  // 6b: Re-login with new password
+  try {
+    const r = await api('POST', '/auth/login', { identifier: 'ashalekshmi19@gmail.com', password: 'NewSecure@1' });
+    const passed = r.status === 200 && r.data.data?.mustChangePassword === false;
+    expertToken = r.data.data?.token || expertToken;
+    addResult('🔑 Password Change', 'Re-login with new password, mustChangePassword=false', passed,
+      `Status: ${r.status}, mustChangePassword: ${r.data.data?.mustChangePassword}`);
+  } catch (e) {
+    addResult('🔑 Password Change', 'Re-login with new password', false, e.message);
+  }
+  render();
+
+  // 6c: After password change, profile update should work
+  try {
+    const r = await api('PUT', '/auth/profile', { name: 'Ashalekshmi T' }, expertToken);
+    addResult('🔑 Password Change', 'PUT /auth/profile ALLOWED after password change', r.status === 200,
+      `Status: ${r.status}, Message: ${r.data.message}`);
+  } catch (e) {
+    addResult('🔑 Password Change', 'PUT /auth/profile ALLOWED after change', false, e.message);
+  }
+  render();
+
+  // Reset the expert password back to Expert@123 for future tests
+  try {
+    await api('PUT', '/auth/change-password', { currentPassword: 'NewSecure@1', newPassword: 'Expert@123' }, expertToken);
+  } catch (e) { /* ignore */ }
+
+  // ═══════════════════════════════════════
+  // TEST 7: Admin Invite Workflow (Phase 2)
+  // ═══════════════════════════════════════
+  // 7a: Admin creates invite for new expert
+  try {
+    const r = await api('POST', '/admin/users/experts', { name: 'Test New Expert', email: 'testnewexpert@example.com' }, adminToken);
+    const passed = (r.status === 201) && r.data.inviteLink;
+    addResult('📨 Admin Invite Workflow', 'POST /admin/users/experts — invite created', passed,
+      JSON.stringify({ status: r.status, message: r.data.message, inviteLink: r.data.inviteLink }, null, 2));
+
+    // Extract token from invite link
+    if (r.data.inviteLink) {
+      const inviteToken = r.data.inviteLink.split('/onboard/')[1];
+      
+      // 7b: Validate invite token
+      try {
+        const v = await api('GET', `/admin/onboard/${inviteToken}`);
+        addResult('📨 Admin Invite Workflow', 'GET /admin/onboard/:token — validates invite', v.status === 200 && v.data.email === 'testnewexpert@example.com',
+          JSON.stringify(v.data, null, 2));
+      } catch (e) {
+        addResult('📨 Admin Invite Workflow', 'GET /admin/onboard/:token — validates invite', false, e.message);
+      }
+      render();
+
+      // 7c: Complete onboarding with profile data
+      try {
+        const o = await api('POST', `/admin/onboard/${inviteToken}`, {
+          password: 'MyPassword@1',
+          dob: '1995-06-15',
+          phone: '9876543210',
+          address: 'Test Address, City, State 123456'
+        });
+        const passed = o.status === 200 && o.data.data?.dob === '1995-06-15' && o.data.data?.phone === '9876543210';
+        addResult('📨 Admin Invite Workflow', 'POST /admin/onboard/:token — expert completes profile', passed,
+          JSON.stringify({ status: o.status, name: o.data.data?.name, email: o.data.data?.email, dob: o.data.data?.dob, phone: o.data.data?.phone, mustChangePassword: o.data.data?.mustChangePassword, username: o.data.data?.username }, null, 2));
+      } catch (e) {
+        addResult('📨 Admin Invite Workflow', 'POST /admin/onboard/:token — expert completes profile', false, e.message);
+      }
+      render();
+
+      // 7d: New expert can login with chosen password
+      try {
+        const l = await api('POST', '/auth/login', { identifier: 'testnewexpert@example.com', password: 'MyPassword@1' });
+        const passed = l.status === 200 && l.data.data?.user?.name === 'Test New Expert' && l.data.data?.mustChangePassword === false;
+        addResult('📨 Admin Invite Workflow', 'New expert logs in with chosen password, mustChangePassword=false', passed,
+          JSON.stringify({ status: l.status, name: l.data.data?.user?.name, mustChangePassword: l.data.data?.mustChangePassword }, null, 2));
+      } catch (e) {
+        addResult('📨 Admin Invite Workflow', 'New expert logs in', false, e.message);
+      }
+      render();
+    }
+  } catch (e) {
+    addResult('📨 Admin Invite Workflow', 'POST /admin/users/experts — invite created', false, e.message);
+  }
+  render();
+
+  // ═══════════════════════════════════════
+  // TEST 8: BRC Assignment by Admin
+  // ═══════════════════════════════════════
+  try {
+    const r = await api('PUT', `/admin/users/experts/${expertId}/brcs`, { brcCodes: ['32110200809SH', '32110700504SH', '32110901034SH', '32110100105SH'] }, adminToken);
+    addResult('🗺️ BRC Assignment', 'PUT /admin/users/experts/:id/brcs — admin assigns BRCs', r.status === 200,
+      JSON.stringify({ status: r.status, message: r.data.message, newBrcCount: r.data.data?.assignedBrcs?.length }, null, 2));
+  } catch (e) {
+    addResult('🗺️ BRC Assignment', 'PUT /admin/users/experts/:id/brcs', false, e.message);
+  }
+  render();
+
+  // ═══════════════════════════════════════
+  // TEST 9: Expert count verification
+  // ═══════════════════════════════════════
+  try {
+    const r = await api('GET', '/admin/users/experts', null, adminToken);
+    const count = Array.isArray(r.data) ? r.data.length : 0;
+    addResult('📊 Data Verification', `Total seeded experts in system: ${count} (expected ≥ 21)`, count >= 21,
+      `Expert count: ${count}\nFirst 5: ${Array.isArray(r.data) ? r.data.slice(0, 5).map(e => e.name).join(', ') : 'N/A'}`);
+  } catch (e) {
+    addResult('📊 Data Verification', 'Total seeded experts', false, e.message);
+  }
+  render();
+
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('run-btn').textContent = '🔄 Re-run All Tests';
+}
+</script>
+</body>
+</html>

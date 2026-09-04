@@ -35,6 +35,7 @@ async function authenticate(req, res, next) {
         avatar: true,
         isActive: true,
         assignedBrcs: true,
+        mustChangePassword: true,
       },
     });
 

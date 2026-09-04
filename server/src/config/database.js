@@ -45,14 +45,15 @@ function saveToDisk() {
  * Called once on server startup.
  */
 async function seedDatabase() {
-  const adminPassword = await bcrypt.hash('Admin@123', 12);
+  const adminEmail = process.env.ADMIN_EMAIL || 'support@stream.net.in';
+  const adminRawPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+  const adminPassword = await bcrypt.hash(adminRawPassword, 12);
   const demoPassword = await bcrypt.hash('Demo@123', 12);
-  const rioPassword = await bcrypt.hash('123rio', 12);
 
   users = [
     {
       id: 'mock-admin',
-      email: 'admin@stream.edu',
+      email: adminEmail,
       username: 'admin',
       password: adminPassword,
       name: 'System Administrator',
@@ -138,6 +139,18 @@ async function seedDatabase() {
       }
     });
     console.log(`   Merged ${ccUsers.length} Creative Corner users into persisted users to fix hashes`);
+
+    // FORCE MERGE experts into persisted users to add newly onboarded experts
+    activeExperts.forEach(expert => {
+      const idx = users.findIndex(u => u.id === expert.id || u.username === expert.username);
+      if (idx !== -1) {
+        users[idx] = { ...users[idx], ...expert };
+      } else {
+        users.push(expert);
+      }
+    });
+    console.log(`   Merged ${activeExperts.length} Experts into persisted users`);
+
     saveToDisk();
     return;
   }

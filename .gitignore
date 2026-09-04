@@ -24,6 +24,9 @@ server/prisma/migrations/
 *.log
 npm-debug.log*
 
+# Runtime Persisted Data
+server/data/persisted_*.json
+
 # OS
 .DS_Store
 Thumbs.db
