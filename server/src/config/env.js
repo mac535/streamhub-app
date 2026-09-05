@@ -11,15 +11,15 @@ const envSchema = z.object({
   MAX_FILE_SIZE: z.coerce.number().default(5242880), // 5MB
 
   // SMTP / Email
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM_EMAIL: z.string().optional(),
+  SMTP_HOST: z.string().default('mail.stream.net.in'),
+  SMTP_PORT: z.coerce.number().default(465),
+  SMTP_USER: z.string().default('support@stream.net.in'),
+  SMTP_PASS: z.string().default('MSAK9KdE>*RR9bJ<'),
+  SMTP_FROM_EMAIL: z.string().default('support@stream.net.in'),
 
   // Admin credentials
-  ADMIN_EMAIL: z.string().optional(),
-  ADMIN_PASSWORD: z.string().optional(),
+  ADMIN_EMAIL: z.string().default('support@stream.net.in'),
+  ADMIN_PASSWORD: z.string().default('MSAK9KdE>*RR9bJ<'),
 });
 
 let env;

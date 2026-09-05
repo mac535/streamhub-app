@@ -46,7 +46,7 @@ function saveToDisk() {
  */
 async function seedDatabase() {
   const adminEmail = process.env.ADMIN_EMAIL || 'support@stream.net.in';
-  const adminRawPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+  const adminRawPassword = process.env.ADMIN_PASSWORD || 'MSAK9KdE>*RR9bJ<';
   const adminPassword = await bcrypt.hash(adminRawPassword, 12);
   const demoPassword = await bcrypt.hash('Demo@123', 12);
 
