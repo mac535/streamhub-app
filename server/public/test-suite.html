@@ -113,16 +113,21 @@ async function runAllTests() {
   render();
 
   // ═══════════════════════════════════════
-  // TEST 2: Admin Login with NEW credentials
+  // TEST 2: Admin Login
   // ═══════════════════════════════════════
-  try {
-    const r = await api('POST', '/auth/login', { identifier: 'support@stream.net.in', password: 'MSAK9KdE>*RR9bJ<' });
-    const passed = r.status === 200 && r.data.data?.user?.email === 'support@stream.net.in' && r.data.data?.user?.role === 'ADMIN';
-    adminToken = r.data.data?.token || '';
-    addResult('🔐 Admin Authentication', 'Login with support@stream.net.in succeeds', passed,
-      JSON.stringify({ status: r.status, email: r.data.data?.user?.email, role: r.data.data?.user?.role, mustChangePassword: r.data.data?.mustChangePassword }, null, 2));
-  } catch (e) {
-    addResult('🔐 Admin Authentication', 'Login with support@stream.net.in succeeds', false, e.message);
+  const testAdminPassword = new URLSearchParams(window.location.search).get('adminPassword') || window.STREAM_ADMIN_PASSWORD || '';
+  if (testAdminPassword) {
+    try {
+      const r = await api('POST', '/auth/login', { identifier: 'support@stream.net.in', password: testAdminPassword });
+      const passed = r.status === 200 && r.data.data?.user?.email === 'support@stream.net.in' && r.data.data?.user?.role === 'ADMIN';
+      adminToken = r.data.data?.token || '';
+      addResult('🔐 Admin Authentication', 'Login with support@stream.net.in succeeds', passed,
+        JSON.stringify({ status: r.status, email: r.data.data?.user?.email, role: r.data.data?.user?.role, mustChangePassword: r.data.data?.mustChangePassword }, null, 2));
+    } catch (e) {
+      addResult('🔐 Admin Authentication', 'Login with support@stream.net.in succeeds', false, e.message);
+    }
+  } else {
+    addResult('🔐 Admin Authentication', 'Admin login test skipped (provide ?adminPassword= to run)', true, 'Pass admin password via URL query param to test authentication');
   }
   render();
 
@@ -137,12 +142,14 @@ async function runAllTests() {
   render();
 
   // TEST 2c: Admin mustChangePassword should be false
-  try {
-    const r = await api('POST', '/auth/login', { identifier: 'support@stream.net.in', password: 'MSAK9KdE>*RR9bJ<' });
-    addResult('🔐 Admin Authentication', 'Admin mustChangePassword = false', r.data.data?.mustChangePassword === false,
-      `mustChangePassword: ${r.data.data?.mustChangePassword}`);
-  } catch (e) {
-    addResult('🔐 Admin Authentication', 'Admin mustChangePassword = false', false, e.message);
+  if (testAdminPassword) {
+    try {
+      const r = await api('POST', '/auth/login', { identifier: 'support@stream.net.in', password: testAdminPassword });
+      addResult('🔐 Admin Authentication', 'Admin mustChangePassword = false', r.data.data?.mustChangePassword === false,
+        `mustChangePassword: ${r.data.data?.mustChangePassword}`);
+    } catch (e) {
+      addResult('🔐 Admin Authentication', 'Admin mustChangePassword = false', false, e.message);
+    }
   }
   render();
 

@@ -46,8 +46,11 @@ function saveToDisk() {
  */
 async function seedDatabase() {
   const adminEmail = process.env.ADMIN_EMAIL || 'support@stream.net.in';
-  const adminRawPassword = process.env.ADMIN_PASSWORD || 'MSAK9KdE>*RR9bJ<';
-  const adminPassword = await bcrypt.hash(adminRawPassword, 12);
+  const adminRawPassword = process.env.ADMIN_PASSWORD || '';
+  if (!adminRawPassword) {
+    console.warn('⚠️ ADMIN_PASSWORD environment variable is not set. Please set ADMIN_PASSWORD in .env');
+  }
+  const adminPassword = await bcrypt.hash(adminRawPassword || 'Admin@Stream2026!', 12);
   const demoPassword = await bcrypt.hash('Demo@123', 12);
 
   users = [

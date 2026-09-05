@@ -10,16 +10,16 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().default(path.join(__dirname, '../../uploads')),
   MAX_FILE_SIZE: z.coerce.number().default(5242880), // 5MB
 
-  // SMTP / Email
-  SMTP_HOST: z.string().default('mail.stream.net.in'),
-  SMTP_PORT: z.coerce.number().default(465),
-  SMTP_USER: z.string().default('support@stream.net.in'),
-  SMTP_PASS: z.string().default('MSAK9KdE>*RR9bJ<'),
-  SMTP_FROM_EMAIL: z.string().default('support@stream.net.in'),
+  // Dedicated Admin credentials from environment variables
+  ADMIN_EMAIL: z.string().default(process.env.ADMIN_EMAIL || ''),
+  ADMIN_PASSWORD: z.string().default(process.env.ADMIN_PASSWORD || ''),
 
-  // Admin credentials
-  ADMIN_EMAIL: z.string().default('support@stream.net.in'),
-  ADMIN_PASSWORD: z.string().default('MSAK9KdE>*RR9bJ<'),
+  // SMTP / Direct Email Configuration (referencing ADMIN_EMAIL & ADMIN_PASSWORD)
+  SMTP_HOST: z.string().default(process.env.SMTP_HOST || 'mail.stream.net.in'),
+  SMTP_PORT: z.coerce.number().default(process.env.SMTP_PORT || 465),
+  SMTP_USER: z.string().default(process.env.SMTP_USER || process.env.ADMIN_EMAIL || ''),
+  SMTP_PASS: z.string().default(process.env.SMTP_PASS || process.env.ADMIN_PASSWORD || ''),
+  SMTP_FROM_EMAIL: z.string().default(process.env.SMTP_FROM_EMAIL || process.env.ADMIN_EMAIL || ''),
 });
 
 let env;
