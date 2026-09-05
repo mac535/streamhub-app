@@ -3,7 +3,7 @@
 //  Cache-first for static assets, network-first for API calls
 // ════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'stream-v3';
+const CACHE_VERSION = 'stream-v4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
