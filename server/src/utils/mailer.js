@@ -23,7 +23,7 @@ const createTransporter = () => {
 };
 
 
-exports.sendInvite = async (email, name, inviteLink) => {
+exports.sendInvite = async (email, name, inviteLink, role = 'EXPERT') => {
   const mailTransporter = createTransporter();
   
   if (!mailTransporter) {
@@ -31,11 +31,13 @@ exports.sendInvite = async (email, name, inviteLink) => {
     return null;
   }
 
+  const roleTitle = role === 'ADMIN' ? 'System Administrator' : 'STREAM Expert';
+
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaeb; border-radius: 12px;">
       <h2 style="color: #1a1a1a;">Welcome to STREAM, ${name}!</h2>
       <p style="color: #4a4a4a; font-size: 16px; line-height: 1.5;">
-        You have been invited to join the STREAM Ecosystem platform. To complete your registration and activate your account, please click the button below:
+        You have been invited to join the STREAM Ecosystem platform as a <strong>${roleTitle}</strong>. To complete your registration and activate your account, please click the button below:
       </p>
       <div style="text-align: center; margin: 30px 0;">
         <a href="${inviteLink}" style="background-color: #0056b3; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block;">
@@ -54,15 +56,15 @@ exports.sendInvite = async (email, name, inviteLink) => {
   `;
 
   try {
-    const fromEmail = env.SMTP_FROM_EMAIL || env.SMTP_USER || 'noreply@stream.edu';
+    const fromEmail = env.SMTP_FROM_EMAIL || env.SMTP_USER || 'support@stream.net.in';
     await mailTransporter.sendMail({
       from: `"STREAM Administration" <${fromEmail}>`,
       to: email,
-      subject: 'You have been invited to STREAM Ecosystem',
+      subject: `You have been invited to STREAM Ecosystem as ${roleTitle}`,
       html: htmlContent,
     });
     
-    console.log(`[MAILER] Invite sent to ${email}`);
+    console.log(`[MAILER] Invite sent to ${email} as ${roleTitle}`);
     return null;
   } catch (error) {
     console.error(`[MAILER] Failed to send invite to ${email}:`, error);

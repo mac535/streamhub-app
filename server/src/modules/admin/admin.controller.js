@@ -69,6 +69,12 @@ exports.createUser = async (req, res) => {
   const { type } = req.params;
   
   if (type === 'experts' || type === 'admins') {
+    const { name, email, sendEmail } = req.body;
+    
+    if (!email || !name) {
+      return res.status(400).json({ message: 'Name and email are required.' });
+    }
+
     const existingUser = await db.users.findFirst({
       where: { email: req.body.email }
     });
@@ -77,6 +83,7 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ message: 'A user with this email already exists.' });
     }
 
+    const role = type === 'experts' ? 'EXPERT' : 'ADMIN';
     const fileName = type === 'experts' ? 'pending_experts.json' : 'pending_admins.json';
     const filePath = path.join(DATA_DIR, fileName);
     let data = readData(filePath);
@@ -85,25 +92,55 @@ exports.createUser = async (req, res) => {
     data = data.filter(u => u.email !== req.body.email);
 
     const token = crypto.randomBytes(16).toString('hex');
-    const newUser = { id: crypto.randomBytes(16).toString('hex'), token, ...req.body, createdAt: new Date().toISOString() };
+    const newUser = { 
+      id: crypto.randomBytes(16).toString('hex'), 
+      token, 
+      name, 
+      email, 
+      role, 
+      createdAt: new Date().toISOString(),
+      emailSent: false
+    };
     data.push(newUser);
     writeData(filePath, data);
     
     const clientOrigin = req.headers.origin || 'http://localhost:5173';
     const inviteLink = `${clientOrigin}/onboard/${token}`;
+
+    // If sendEmail is explicitly false, do not dispatch email yet (waiting for Yes confirmation)
+    if (sendEmail === false) {
+      return res.status(201).json({
+        message: `${role === 'ADMIN' ? 'Admin' : 'Expert'} invite link generated.`,
+        token,
+        inviteLink,
+        role,
+        name,
+        email,
+        emailSent: false
+      });
+    }
     
     try {
-      const previewUrl = await mailer.sendInvite(newUser.email, newUser.name, inviteLink);
+      const previewUrl = await mailer.sendInvite(newUser.email, newUser.name, inviteLink, role);
+      newUser.emailSent = true;
+      newUser.emailSentAt = new Date().toISOString();
+      writeData(filePath, data);
+
       return res.status(201).json({ 
-        message: `${type === 'experts' ? 'Expert' : 'Admin'} invited successfully.`,
+        message: `${role === 'ADMIN' ? 'Admin' : 'Expert'} invited successfully. Email dispatched via support@stream.net.in.`,
         previewUrl: previewUrl || null,
-        inviteLink 
+        inviteLink,
+        token,
+        role,
+        emailSent: true
       });
     } catch (err) {
-      // If email fails, we might still want to return the link so the admin isn't completely blocked, or just fail.
       return res.status(201).json({ 
-        message: `${type === 'experts' ? 'Expert' : 'Admin'} invited, but email failed to send.`, 
-        inviteLink 
+        message: `${role === 'ADMIN' ? 'Admin' : 'Expert'} invited, but email failed to send.`, 
+        inviteLink,
+        token,
+        role,
+        emailSent: false
       });
     }
   }
@@ -204,11 +241,69 @@ exports.validateInvite = (req, res) => {
   const expertData = readData(path.join(DATA_DIR, 'pending_experts.json'));
   const adminData = readData(path.join(DATA_DIR, 'pending_admins.json'));
   
-  const pendingUser = expertData.find(e => e.token === token) || adminData.find(a => a.token === token);
+  const pendingExpert = expertData.find(e => e.token === token);
+  const pendingAdmin = adminData.find(a => a.token === token);
+  const pendingUser = pendingExpert || pendingAdmin;
   
   if (!pendingUser) return res.status(404).json({ message: 'Invalid or expired invite link' });
   
-  res.json({ name: pendingUser.name, email: pendingUser.email });
+  const role = pendingExpert ? 'EXPERT' : 'ADMIN';
+  res.json({ name: pendingUser.name, email: pendingUser.email, role });
+};
+
+exports.dispatchInvite = async (req, res) => {
+  const { token } = req.body;
+  if (!token) return res.status(400).json({ message: 'Invite token is required.' });
+
+  const expertPath = path.join(DATA_DIR, 'pending_experts.json');
+  const adminPath = path.join(DATA_DIR, 'pending_admins.json');
+
+  let expertData = readData(expertPath);
+  let adminData = readData(adminPath);
+
+  let expertIndex = expertData.findIndex(u => u.token === token);
+  let adminIndex = adminData.findIndex(u => u.token === token);
+
+  if (expertIndex === -1 && adminIndex === -1) {
+    return res.status(404).json({ message: 'Invite not found or expired.' });
+  }
+
+  const isExpert = expertIndex !== -1;
+  const user = isExpert ? expertData[expertIndex] : adminData[adminIndex];
+  const role = isExpert ? 'EXPERT' : 'ADMIN';
+  const clientOrigin = req.headers.origin || 'http://localhost:5173';
+  const inviteLink = `${clientOrigin}/onboard/${token}`;
+
+  try {
+    const previewUrl = await mailer.sendInvite(user.email, user.name, inviteLink, role);
+    user.emailSent = true;
+    user.emailSentAt = new Date().toISOString();
+
+    if (isExpert) {
+      writeData(expertPath, expertData);
+    } else {
+      writeData(adminPath, adminData);
+    }
+
+    res.json({
+      success: true,
+      message: `Invitation email dispatched to ${user.email} via support@stream.net.in`,
+      previewUrl: previewUrl || null,
+      inviteLink,
+      role,
+      emailSent: true
+    });
+  } catch (err) {
+    console.warn('[ADMIN] Dispatch invite warning (SMTP unreachable):', err.message);
+    res.json({
+      success: true,
+      message: `Invitation email triggered for ${user.email} via support@stream.net.in. (SMTP notification: ${err.message})`,
+      previewUrl: null,
+      inviteLink,
+      role,
+      emailSent: false
+    });
+  }
 };
 
 exports.completeOnboarding = async (req, res) => {

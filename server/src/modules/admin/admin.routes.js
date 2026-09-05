@@ -4,6 +4,7 @@ const adminController = require('./admin.controller');
 
 // User Management Routes
 router.get('/users/:type', adminController.getUsers);
+router.post('/users/dispatch-invite', adminController.dispatchInvite);
 router.post('/users/:type', adminController.createUser);
 router.delete('/users/:type/:id', adminController.softDeleteUser);
 router.put('/users/experts/:id/brcs', adminController.updateExpertBrcs);

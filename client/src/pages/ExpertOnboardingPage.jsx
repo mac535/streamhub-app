@@ -46,7 +46,8 @@ export default function ExpertOnboardingPage() {
       setError('Passwords do not match');
       return;
     }
-    if (!formData.whatsappJoined) {
+    const isExpert = expertDetails?.role !== 'ADMIN';
+    if (isExpert && !formData.whatsappJoined) {
       setError('You must confirm that you have joined the WhatsApp group.');
       return;
     }
@@ -84,6 +85,8 @@ export default function ExpertOnboardingPage() {
     );
   }
 
+  const roleTitle = expertDetails?.role === 'ADMIN' ? 'System Administrator' : 'STREAM Expert';
+
   if (success) {
     return (
       <div className="min-h-screen bg-[#fdfbf7] flex items-center justify-center p-4">
@@ -94,7 +97,7 @@ export default function ExpertOnboardingPage() {
           <h2 className="text-4xl tracking-wide text-on-surface mb-2" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
             Welcome Aboard!
           </h2>
-          <p className="text-secondary font-medium">Your STREAM Expert account is now fully activated. Redirecting you to the login portal...</p>
+          <p className="text-secondary font-medium">Your {roleTitle} account is now fully activated. Redirecting you to the login portal...</p>
         </div>
       </div>
     );
@@ -110,14 +113,18 @@ export default function ExpertOnboardingPage() {
         <div className="bg-primary px-8 py-10 text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIj48L3JlY3Q+CjxwYXRoIGQ9Ik0wIDBMOCA4Wk04IDBMMCA4WiIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjEiPjwvcGF0aD4KPC9zdmc+')] mix-blend-overlay"></div>
           <h1 className="text-4xl text-on-primary tracking-widest relative z-10" style={{ fontFamily: "'Bebas Neue', sans-serif" }}>
-            Expert Onboarding
+            {expertDetails?.role === 'ADMIN' ? 'Administrator Onboarding' : 'Expert Onboarding'}
           </h1>
-          <p className="text-primary-container relative z-10 mt-2 font-medium">Complete your profile to activate your account</p>
+          <p className="text-primary-container relative z-10 mt-2 font-medium">
+            Complete your profile to activate your {roleTitle} account
+          </p>
         </div>
 
         <div className="p-8 md:p-12">
           <div className="bg-surface-container-low rounded-2xl p-6 mb-8 border border-outline/10 text-center">
-            <p className="text-sm text-secondary uppercase tracking-wider font-bold mb-1">Invited As</p>
+            <div className="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">
+              {roleTitle}
+            </div>
             <p className="text-2xl font-bold text-on-surface">{expertDetails.name}</p>
             <p className="text-primary font-medium">{expertDetails.email}</p>
             {expertDetails.username && (
@@ -166,35 +173,37 @@ export default function ExpertOnboardingPage() {
               </div>
             </div>
 
-            {/* WhatsApp Integration */}
-            <div className="mt-8 bg-green-50 border border-green-200 rounded-2xl p-6">
-              <div className="flex items-start gap-4">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-10 h-10 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-green-900 mb-1">Official Communications Group</h4>
-                  <p className="text-sm text-green-800 mb-4">You must join the official STREAM Experts WhatsApp group to receive announcements and updates.</p>
-                  
-                  <a href="https://chat.whatsapp.com/example_invite_link" target="_blank" rel="noopener noreferrer" className="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm mb-6 shadow-md">
-                    Join WhatsApp Group
-                  </a>
+            {/* WhatsApp Integration - Expert only */}
+            {expertDetails?.role !== 'ADMIN' && (
+              <div className="mt-8 bg-green-50 border border-green-200 rounded-2xl p-6">
+                <div className="flex items-start gap-4">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-10 h-10 shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-green-900 mb-1">Official Communications Group</h4>
+                    <p className="text-sm text-green-800 mb-4">You must join the official STREAM Experts WhatsApp group to receive announcements and updates.</p>
+                    
+                    <a href="https://chat.whatsapp.com/example_invite_link" target="_blank" rel="noopener noreferrer" className="inline-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm mb-6 shadow-md">
+                      Join WhatsApp Group
+                    </a>
 
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <div className="relative flex items-center justify-center">
-                      <input 
-                        type="checkbox" 
-                        name="whatsappJoined" 
-                        onChange={handleChange}
-                        className="peer appearance-none w-5 h-5 border-2 border-green-600 rounded checked:bg-green-600 checked:border-green-600 transition-all cursor-pointer"
-                      />
-                      <span className="material-symbols-outlined text-white absolute text-sm opacity-0 peer-checked:opacity-100 pointer-events-none">done</span>
-                    </div>
-                    <span className="text-sm font-bold text-green-900 group-hover:text-green-700 transition-colors">
-                      Yes, I have successfully joined the WhatsApp group.
-                    </span>
-                  </label>
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative flex items-center justify-center">
+                        <input 
+                          type="checkbox" 
+                          name="whatsappJoined" 
+                          onChange={handleChange}
+                          className="peer appearance-none w-5 h-5 border-2 border-green-600 rounded checked:bg-green-600 checked:border-green-600 transition-all cursor-pointer"
+                        />
+                        <span className="material-symbols-outlined text-white absolute text-sm opacity-0 peer-checked:opacity-100 pointer-events-none">done</span>
+                      </div>
+                      <span className="text-sm font-bold text-green-900 group-hover:text-green-700 transition-colors">
+                        Yes, I have successfully joined the WhatsApp group.
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <button type="submit" disabled={submitting} className="w-full mt-8 py-4 bg-primary text-on-primary font-bold rounded-xl shadow-lg hover:shadow-primary/30 hover:-translate-y-1 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none text-lg tracking-wide uppercase">
               {submitting ? 'Activating Account...' : 'Activate My Account'}

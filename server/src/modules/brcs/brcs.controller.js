@@ -22,6 +22,11 @@ const writeData = (filePath, data) => {
 exports.getAllBrcs = (req, res) => {
   try {
     const brcs = readData(brcsPath);
+    const { district } = req.query;
+    if (district) {
+      const filtered = brcs.filter(b => (b.district || '').toUpperCase() === district.toUpperCase());
+      return res.json(filtered);
+    }
     res.json(brcs);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch BRCs', error: err.message });
