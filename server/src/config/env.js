@@ -15,7 +15,7 @@ const envSchema = z.object({
   ADMIN_PASSWORD: z.string().default(process.env.ADMIN_PASSWORD || ''),
 
   // SMTP / Direct Email Configuration (referencing ADMIN_EMAIL & ADMIN_PASSWORD)
-  SMTP_HOST: z.string().default(process.env.SMTP_HOST || 'mail.stream.net.in'),
+  SMTP_HOST: z.string().default(process.env.SMTP_HOST || 'smtp.gmail.com'),
   SMTP_PORT: z.coerce.number().default(process.env.SMTP_PORT || 465),
   SMTP_USER: z.string().default(process.env.SMTP_USER || process.env.ADMIN_EMAIL || ''),
   SMTP_PASS: z.string().default(process.env.SMTP_PASS || process.env.ADMIN_PASSWORD || ''),
